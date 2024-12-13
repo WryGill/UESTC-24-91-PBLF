@@ -280,8 +280,8 @@ public:
 		}
 	}
 
-	Note parseNote(const std::string& noteStr) {
-		double duration = 500;
+	Note parseNote(const std::string& noteStr,double duration) {
+		// duration = 500;
 		int vol = 0x7f;
 		int pitch = Rest;
 		int size = noteStr.size();
@@ -293,32 +293,8 @@ public:
 		for (int i = 0; i < size; i++){
 			char c = noteStr[i];
 			switch (c){
-				case '_':{
-					duration /= 2;
-					break;
-				}
-				case '*':{
-					duration /= 3;
-					break;
-				}
-				case '&':{
-					duration /= 7;
-					break;
-				}
-				case '%':{
-					duration /= 5;
-					break;
-				}
-				case '.':{
-					duration *= 1.5;
-					break;
-				}
-				case '-':{
-					duration += duration;
-					break;
-				}
 				case '0':{
-					break;
+					return Note(Rest,duration,vol);
 				}
 				case '^':{
 					lvl++;
@@ -333,41 +309,104 @@ public:
 					break;
 				}
 				default:{
-					assert(c >= '1' && c <= '7');
+					if (!(c >= '1' && c <= '7')) {
+    					std::cerr << "Invalid character: " << c << std::endl;
+					}
 					x = c - 49;
+					// std::cout << "add:" << c - 49; 
 					break;
 				}
 			}
 		}
 		pitch = (isSharp  == 0 ? C_Scale[lvl][x] : C_Scale_s[lvl][x]);
 		return Note(pitch,duration,vol);
-}
+	}
 
-void parseLineToNoteList(NoteList& noteList, const std::string& line) {
-    std::istringstream iss(line);
-    std::string token;
-	//链表动态数组
-	std::vector<NoteList> noteLists;
-    while (iss >> token) { // 使用空格分割
-        if (token == "|") continue; // 忽略小节线
+	std::vector<NoteList> parseLineToListVector(const std::string& line) {
+		std::vector <NoteList>listVector;
+		std::istringstream iss(line);
+		std::string token;
+		std::string targetChars = "_*&%.-";
+		
+		while (iss >> token){
+			// std::cout << "Current token: " << token << std::endl; // 调试输出
+			// std::cout << "iss.eof(): " << iss.eof() 
+			// 	<< ", iss.fail(): " << iss.fail() 
+			// 	<< ", iss.bad(): " << iss.bad() << std::endl;
 
-        if (token.front() == '[' && token.back() == ']') {
-            // 解析和弦
-            std::string chordNotes = token.substr(1, token.size() - 2);
-            std::istringstream chordStream(chordNotes);
-            std::string chordToken;
 
-            while (getline(chordStream, chordToken, ',')) {
-                Note chordNote = parseNote(chordToken);
-                noteList.append(chordNote);
-            }
-        } else {
-            // 解析单独的音符
-            Note singleNote = parseNote(token);
-            noteList.append(singleNote);
-        }
-    }
-}
+			NoteList currentList;
+			double duration = 500;
+			int vol = 0x7f;
+			int pitch = Rest;
+			if(token == "|") continue;
+
+			while (targetChars.find(token.back()) != std::string::npos){
+				// std::cout << "Token inside while: " << token << std::endl;
+				char c = token.back();
+				switch (c){
+					case '_':{
+						duration /= 2;
+						break;
+					}
+					case '*':{
+						duration /= 3;
+						break;
+					}
+					case '&':{
+						duration /= 7;
+						break;
+					}
+					case '%':{
+						duration /= 5;
+						break;
+					}
+					case '.':{
+						duration *= 1.5;
+						break;
+					}
+					case '-':{
+						duration += 500;
+						break;
+					}
+				}
+				token.pop_back();
+			}
+			if (token.front() == '[' && token.back() == ']') {
+				// 解析和弦
+				std::string chordNotes = token.substr(1, token.size() - 2);
+				int lastIndex = chordNotes.size();
+				int index = 0;
+				for (int i = 1; i < chordNotes.size(); i++)
+				{
+					if (chordNotes[i] >= '1' && chordNotes[i] <= '7'){
+						std::string str = chordNotes.substr(index,i - index);
+						Note note = parseNote(str,duration);
+						currentList.append(note);
+						// currentList.display();
+						index = i;
+						str.clear();
+					}
+					if (i == chordNotes.size() - 1)
+					{
+						std::string str = chordNotes.substr(index,chordNotes.size() - index);
+						Note note = parseNote(str,duration);
+						currentList.append(note);
+						// currentList.display();
+					}
+				}
+				//√
+			} else {
+				// 解析单独的音符
+				Note singleNote = parseNote(token,duration);
+				currentList.append(singleNote);
+			}
+			// std::cout << "pass" << std::endl;
+			listVector.push_back(currentList);
+		}
+		// std::cout << "helloworld while\n";
+		return listVector;
+	}
 
 };
 class BGM{

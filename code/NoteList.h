@@ -2,7 +2,6 @@
 #define NOTELIST_H
 
 #include <iostream>
-
 struct Note
 {
     int pitch;
@@ -12,19 +11,29 @@ struct Note
 };
 
 // 音符链表的节点结构
-struct Node {
+class NoteNode {
+public:
     Note note;        // 数据域
-    Node* next;      // 指针域
-     Node(const Note& n, Node* nxt = nullptr) : note(n), next(nxt) {}
+    NoteNode* next;      // 指针域
+    NoteNode(const Note& n, NoteNode* nxt = nullptr) : note(n), next(nxt) {}
 };
 
 // 单向链表类
 class NoteList {
 private:
-    Node* head;      // 链表头指针
+    NoteNode* head;      // 链表头指针
+    // 辅助函数：用于递归复制链表节点
+    NoteNode* copyList(NoteNode* node) {
+        if (node == nullptr) return nullptr;
+        NoteNode* newNode = new NoteNode(node->note);
+        newNode->next = copyList(node->next);
+        return newNode;
+    }
 
 public:
     NoteList();                      // 构造函数
+    NoteList(const NoteList& other); // 拷贝构造函数
+    NoteList& operator=(const NoteList& other); // 赋值操作符
     ~NoteList();                     // 析构函数
 
     void append(Note note);            // 在链表末尾添加节点

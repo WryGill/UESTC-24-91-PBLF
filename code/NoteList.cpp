@@ -2,7 +2,18 @@
 
 // 构造函数初始化链表为空
 NoteList::NoteList() : head(nullptr) {}
-
+// 拷贝构造函数
+NoteList::NoteList(const NoteList& other) {
+    head = copyList(other.head);
+}
+// 赋值操作符
+NoteList& NoteList::operator=(const NoteList& other) {
+    if (this != &other) { // 防止自赋值
+        clear();          // 清空现有数据
+        head = copyList(other.head);
+    }
+    return *this;
+}
 // 析构函数释放所有节点内存
 NoteList::~NoteList() {
     clear();
@@ -10,11 +21,11 @@ NoteList::~NoteList() {
 
 // 在链表末尾添加节点
 void NoteList::append(Note note) {
-    Node* newNode = new Node(note);
+    NoteNode* newNode = new NoteNode(note);
     if (head == nullptr) {
         head = newNode;
     } else {
-        Node* current = head;
+        NoteNode* current = head;
         while (current->next != nullptr) {
             current = current->next;
         }
@@ -26,7 +37,7 @@ void NoteList::append(Note note) {
 void NoteList::insert(Note note, int index) {
     if (index < 0) return;
 
-    Node* newNode = new Node(note);
+    NoteNode* newNode = new NoteNode(note);
 
     if (index == 0 || head == nullptr) {
         newNode->next = head;
@@ -34,7 +45,7 @@ void NoteList::insert(Note note, int index) {
         return;
     }
 
-    Node* current = head;
+    NoteNode* current = head;
     for (int i = 0; current != nullptr && i < index - 1; ++i) {
         current = current->next;
     }
@@ -51,13 +62,13 @@ void NoteList::insert(Note note, int index) {
 void NoteList::remove(int index) {
     if (index < 0 || head == nullptr) return;
 
-    Node* toDelete;
+    NoteNode* toDelete;
 
     if (index == 0) {
         toDelete = head;
         head = head->next;
     } else {
-        Node* current = head;
+        NoteNode* current = head;
         for (int i = 0; current != nullptr && i < index - 1; ++i) {
             current = current->next;
         }
@@ -73,7 +84,7 @@ void NoteList::remove(int index) {
 
 // 打印链表
 void NoteList::display() const {
-    Node* current = head;
+    NoteNode* current = head;
     while (current != nullptr) {
         std::cout << "Pitch: " << current->note.pitch 
                   << ", Duration: " << current->note.duration 
@@ -85,16 +96,18 @@ void NoteList::display() const {
 // 清空链表
 void NoteList::clear() {
     while (head != nullptr) {
-        Node* temp = head;
+        NoteNode* temp = head;
         head = head->next;
         delete temp;
+        // std::cout << "delete\n" <<std::endl;
+        // display();
     }
 }
 
 // 获取链表长度
 int NoteList::size() const {
     int count = 0;
-    Node* current = head;
+    NoteNode* current = head;
     while (current != nullptr) {
         ++count;
         current = current->next;
@@ -106,7 +119,7 @@ int NoteList::size() const {
 Note NoteList::findAt(int index) {
     if (index < 0 || head == nullptr) throw std::out_of_range("Index out of range");
 
-    Node* current = head;
+    NoteNode* current = head;
     for (int i = 0; current != nullptr && i < index; ++i) {
         current = current->next;
     }
