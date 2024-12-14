@@ -1,16 +1,18 @@
 #include "NoteList.h"
-
+#include <vector>
 // 构造函数初始化链表为空
-NoteList::NoteList() : head(nullptr) {}
+NoteList::NoteList() : head(nullptr),duration(500) {}
 // 拷贝构造函数
 NoteList::NoteList(const NoteList& other) {
     head = copyList(other.head);
+    duration = other.duration;
 }
 // 赋值操作符
 NoteList& NoteList::operator=(const NoteList& other) {
     if (this != &other) { // 防止自赋值
         clear();          // 清空现有数据
         head = copyList(other.head);
+        duration = other.duration;
     }
     return *this;
 }
@@ -87,7 +89,7 @@ void NoteList::display() const {
     NoteNode* current = head;
     while (current != nullptr) {
         std::cout << "Pitch: " << current->note.pitch 
-                  << ", Duration: " << current->note.duration 
+                  << ", Duration: " << this->duration 
                   << ", Volume: " << current->note.volume << std::endl;
         current = current->next;
     }
@@ -132,4 +134,31 @@ Note NoteList::findAt(int index) {
 // 判断链表是否为空
 bool NoteList::isEmpty() const {
     return head == nullptr;
+}
+
+double NoteList::getDuration() const {
+    return duration;
+}
+
+void NoteList::setDuration(double d) {
+    duration = d;
+}
+
+std::vector<int> NoteList::transformNoteBuffer(){
+    NoteNode* current = head;
+    std::vector<int> noteBuffer;
+    while (current != nullptr) {
+        Note note = current->note;
+        if (note.pitch == 0)
+        {
+            noteBuffer.push_back(0);
+            current = current->next;
+            continue;
+        }
+        
+        int noteInfo = (note.volume<<16) + (note.pitch<<8) + 0x90;
+        noteBuffer.push_back(noteInfo);
+        current = current->next;
+    }
+    return noteBuffer;
 }

@@ -2,12 +2,13 @@
 #define NOTELIST_H
 
 #include <iostream>
+#include <vector>
+using namespace std;
 struct Note
 {
     int pitch;
-    double duration;
     int volume;
-    Note(int p = 0, double d = 500, int v = 0x7f) : pitch(p), duration(d), volume(v) {}
+    Note(int p = 0, int v = 0x7f) : pitch(p), volume(v) {}
 };
 
 // 音符链表的节点结构
@@ -20,8 +21,10 @@ public:
 
 // 单向链表类
 class NoteList {
+    
 private:
     NoteNode* head;      // 链表头指针
+    double duration;
     // 辅助函数：用于递归复制链表节点
     NoteNode* copyList(NoteNode* node) {
         if (node == nullptr) return nullptr;
@@ -44,6 +47,9 @@ public:
     int size() const;                  // 获取链表长度
     Note findAt(int index);      //查找指定元素
     bool isEmpty() const;              // 判断链表是否为空
+    double getDuration() const;        // 添加此行，获取持续时间
+    void setDuration(double d);        // 添加此行，设置持续时间
+    std::vector<int> transformNoteBuffer();
 };
 
 #endif // NOTELIST_H
