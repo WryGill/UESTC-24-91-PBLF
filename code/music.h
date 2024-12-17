@@ -10,17 +10,17 @@
 #include <assert.h>   // 断言支持
 #include "LinkedList.h"
 #include "NoteList.h"
-#define DEBUG 0       // 调试标志，0 表示关闭调试信息
+#define DEBUG 1       // 调试标志，0 表示关闭调试信息
 
 //音符列表类（乐谱类）
 class MusicList{
 public:
-	// int noteDelayMs=500; //四分音符延迟
+
 	LinkedList list; //存储音符的链表
 	
 	~MusicList(){}
 
-	//添加音符
+	//添加文本行至链表
 	void add(std::string s){
 		list.append(s);
 	}
@@ -30,10 +30,6 @@ public:
 		list.clear();
 	}
 	
-	// //设置音符持续时间
-	// void setDelay(int _noteDelayMs){
-	// 	noteDelayMs= _noteDelayMs;
-	// }
 
 	//读取乐谱，读取相应文件名的文件，如无参数，默认为空
 	void readFile(std::string fileName=""){
@@ -41,9 +37,6 @@ public:
 		clear();
 		//打开文件
 		std::ifstream in(fileName);
-		//读取第一行的音符节奏
-		// in>>noteDelayMs;
-		
 		std::string noteLine;
 		//读取空格之间的字符串作为音符，并加入乐谱
 		while (getline(in,noteLine)) add(noteLine);
@@ -120,19 +113,16 @@ public:
 	void play(std::string s1,std::string s2="",double duration = 500){
 		STOP=0;tick1=0;tick2=0;
 		//设置曲子线程，分别对应两段旋律
-		// std::thread tune1(&MusicPlayer::play_single,this,s1,1);tune1.detach();
-		// std::thread tune2(&MusicPlayer::play_single,this,s2,0);tune2.detach();
-		
-		std::thread tune1(&MusicPlayer::playSingleLine,this,parseLineToListVector(s1,duration),1);tune1.detach();
-		std::thread tune2(&MusicPlayer::playSingleLine,this,parseLineToListVector(s2,duration),0);tune2.detach();
+		std::thread tune1(&MusicPlayer::playSingleLine,this,parseLineToNoteMap(s1,duration),1);tune1.detach();
+		std::thread tune2(&MusicPlayer::playSingleLine,this,parseLineToNoteMap(s2,duration),0);tune2.detach();
 		while (STOP<2);
-		// if (DEBUG){
-		// 	if (tick1==tick2) puts("Succ");
-		// 	else printf("Warn: %d!=%d\n",tick1,tick2);			
-		// }
+		if (DEBUG){
+			if (tick1==tick2) puts("Succ");
+			else printf("Warn: %d!=%d\n",tick1,tick2);			
+		}
 	}
 	
-	void playList(MusicList &m){
+	void classifyList(MusicList &m){
 		ENDMUSIC=0;
 		double duration = 500;
 		for (int i=0;i<m.list.size() && !ENDMUSIC;++i){
@@ -160,11 +150,11 @@ public:
 		int vol = 0x7f;
 		int pitch = Rest;
 		int size = noteStr.size();
-		int lvl = 3;
+		int lvl = 3;//音高（也是确定数组下标）
 		bool isSharp = 0;
-		int x = 0;
-		//分割字符串
-
+		int x = 0;//转换后的数组下标
+		
+		//遍历字符串
 		for (int i = 0; i < size; i++){
 			char c = noteStr[i];
 			switch (c){
@@ -193,14 +183,17 @@ public:
 				}
 			}
 		}
+		//三目运算符进行赋值
 		pitch = (isSharp  == 0 ? C_Scale[lvl][x] : C_Scale_s[lvl][x]);
 		return Note(pitch,vol);
 	}
 
-	std::vector<NoteList> parseLineToListVector(const std::string& line,double defaultDuration) {
-		std::vector <NoteList>listVector;
+	std::vector<NoteList> parseLineToNoteMap(const std::string& line,double defaultDuration) {
+		std::vector <NoteList>noteMap;
 		std::istringstream iss(line);
+		//token为以空行为单位分割的字符串
 		std::string token;
+		//目标字符，主要是用于匹配节奏字符
 		std::string targetChars = "_*&%.-";
 		
 		while (iss >> token){
@@ -212,10 +205,14 @@ public:
 			NoteList currentList;
 			int vol = 0x7f;
 			int pitch = Rest;
+			//忽略分节符
 			if(token == "|") continue;
+			//while循环，结束条件是字符串末尾不再包含节奏字符
 			while (targetChars.find(token.back()) != std::string::npos){
 				// std::cout << "Token inside while: " << token << std::endl;
+				//读取最后一个字符
 				char c = token.back();
+				//匹配并处理
 				switch (c){
 					case '_':{
 						duration /= 2;
@@ -242,13 +239,17 @@ public:
 						break;
 					}
 				}
+				//删除最后一个字符
 				token.pop_back();
 			}
+			//设置持续时间
 			currentList.setDuration(duration);
+			//重置为节奏行定义的时间，如果不重置的话，duration会递减至0
 			duration = defaultDuration;
 			if (token.front() == '[' && token.back() == ']') {
-				// 解析和弦
+				// 解析和弦，去掉中括号
 				std::string chordNotes = token.substr(1, token.size() - 2);
+				//剩下的代码就全部都是解析字符串，并存储在链表中
 				int lastIndex = chordNotes.size();
 				int index = 0;
 				for (int i = 1; i < chordNotes.size(); i++)
@@ -269,23 +270,26 @@ public:
 						// currentList.display();
 					}
 				}
-				//√
 			} else {
 				// 解析单独的音符
 				Note singleNote = parseNote(token);
 				currentList.append(singleNote);
 			}
 			// std::cout << "pass" << std::endl;
-			listVector.push_back(currentList);
+			//最后将链表存储在动态数组，成为一个map
+			noteMap.push_back(currentList);
 		}
 		// std::cout << "helloworld while\n";
-		return listVector;
+		return noteMap;
 	}
 
-	void playSingleLine(std::vector<NoteList> noteLists, bool isMain){
+	void playSingleLine(std::vector<NoteList> noteMap, bool isMain){
+		//获取播放开始的时间戳
 		long start = clock();
+		//定义记录时间戳，跟随进度
 		double tick = 0;
-		for(NoteList noteList : noteLists){
+		//遍历Note中的所有和弦的音符，发送至midi统一播放
+		for(NoteList noteList : noteMap){
 			std::vector<int> noteBuffer = noteList.transformNoteBuffer();
 			for(int noteInfo : noteBuffer){
 				if(noteInfo != 0){
@@ -293,12 +297,16 @@ public:
 				}
 			}
 			noteBuffer.clear();
+			//设置音符播放持续时间
 			while ((clock() - start) * 1.0 < tick + noteList.getDuration());
+			//更新进度条
 			tick += noteList.getDuration(); 
 		}
 		//如果本行是主旋律，则本行的时间戳为主时间戳
 		if (isMain) tick1=tick;else tick2=tick;
+		//线程锁，等待下一个线程就绪
 		mu.lock();
+		//两个线程就绪（stop=2），开始解锁
 		STOP++;
 		mu.unlock();
 	}
@@ -307,7 +315,7 @@ class BGM{
 public:
 	MusicPlayer player;
 	MusicList nowList;
-	BGM(std::string name,int volume=0x7f){
+	BGM(std::string name){
 		nowList.readFile(name);
 	}
 	~BGM(){
@@ -318,7 +326,7 @@ public:
 	}
 	void play_thread(){
 		while (1){
-			player.playList(nowList);
+			player.classifyList(nowList);
 			if (player.ENDMUSIC) break;	
 		}
 	}

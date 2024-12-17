@@ -145,7 +145,9 @@ void NoteList::setDuration(double d) {
 }
 
 std::vector<int> NoteList::transformNoteBuffer(){
+    //获取头节点
     NoteNode* current = head;
+    //定义缓冲数组
     std::vector<int> noteBuffer;
     while (current != nullptr) {
         Note note = current->note;

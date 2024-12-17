@@ -43,12 +43,12 @@ public:
     void insert(Note note, int index); // 在指定位置插入节点
     void remove(int index);            // 删除指定位置的节点
     void display() const;              // 打印链表
-    void clear();
+    void clear();                       //清空链表
     int size() const;                  // 获取链表长度
     Note findAt(int index);      //查找指定元素
     bool isEmpty() const;              // 判断链表是否为空
-    double getDuration() const;        // 添加此行，获取持续时间
-    void setDuration(double d);        // 添加此行，设置持续时间
+    double getDuration() const;        // 获取持续时间
+    void setDuration(double d);        // 设置持续时间
     std::vector<int> transformNoteBuffer();
 };
 
