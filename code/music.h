@@ -91,6 +91,7 @@ private:
 	HMIDIOUT handle;
 
 public:
+
 	//音乐播放状态（是否结束）
 	bool ENDMUSIC=0;
 	//停止播放命令
@@ -235,7 +236,7 @@ public:
 						break;
 					}
 					case '-':{
-						duration += 500;
+						duration += defaultDuration;
 						break;
 					}
 				}
@@ -297,6 +298,8 @@ public:
 				}
 			}
 			noteBuffer.clear();
+			// std::string tune = isMain ? "tune1" : "tune2";
+			// std::cout << "duration " + tune + "\t" << tick + noteList.getDuration() + '\n'<<std::endl;
 			//设置音符播放持续时间
 			while ((clock() - start) * 1.0 < tick + noteList.getDuration());
 			//更新进度条
