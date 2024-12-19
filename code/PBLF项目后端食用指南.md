@@ -112,13 +112,18 @@ std::vector<int> transformNoteBuffer();
 
 
 
-## 五、MusicList（考虑改名）
+## 五、MusicManager
 
-> 这一串代码属于负责raw data（.txt文件）的解析阶段，所以以字符串和文件的操作为主，主要目的还是将文件内容解析到字符串链表里。
+> ~~这一串代码属于负责raw data（.txt文件）的解析阶段，所以以字符串和文件的操作为主，主要目的还是将文件内容解析到字符串链表里。~~
+>
+> 新版：这是一个歌单管理系统（bushi），有关单个歌曲的宏观操作都由这个类去实现。
 
 **属性**：
 
-* LinkedLIst list：字符串链表，每一个节点存储的是.txt文件中的每一行字符串。
+* ```LinkedLIst currentMusic```：字符串链表，每一个节点存储的是.txt文件中的每一行字符串。
+* ```std::string musicPath```：被操作歌曲的相对路径
+* ```MusicSerializer musicSerializer```：序列化当前音乐（就是将音乐从noteTable对象转化为字符串）
+* ```MusicDeserializer musicDeserializer```：反序列化音乐（就是将字符串转化成noteTable对象）
 
 ### 1.添加文本行
 
@@ -131,16 +136,61 @@ void add(std::string s)
 ### 2.读取文件
 
 ```cpp
-void readFile(std::string fileName="")
+void load(std::string path="")
 ```
 
-* 逐行读取.txt文件，并调用add函数存储。
+* 逐行读取.txt文件，并调用add函数存储至currentMusic中。
 
-### 3.清除链表
+### 3.清除当前歌曲
 
 ```cpp
-void clear(){
+void clear()
 ```
+
+### 4.保存当前行
+
+```cpp
+void saveLine(std::vector<NoteList> noteTable)
+```
+
+* 应用场景：当用户在编写曲子的时候，每编写好一行，就可以点一次确定，这样就可以保存当前进度。
+* 函数用途：将编写好的一行旋律保存转化为字符串并保存至currentMusic，以备不时之需。
+
+### 5.保存整首歌
+
+```cpp
+void saveMusic()
+```
+
+* 应用场景：用户编写完整首歌了，在文件中永久保存。
+* 函数用途：将currentMusic存储的字符串全部保存至文件中。
+
+### 6.新建歌曲
+
+```cpp
+void create(std::string music)
+```
+
+* 应用场景：用户新建一首歌，并开始编曲。
+* 函数用途：创建一个相关名字的空文件夹。
+
+### 7.删除歌曲
+
+```cpp
+void remove(std::string music)
+```
+
+* 应用场景：用户对自己的作品不满意，决定删除。
+* 函数用途：删除指定文件。
+
+### 8.查找歌曲
+
+```cpp
+void query(std::string music)
+```
+
+* 应用场景：帮助用户查找并加载歌曲
+* 函数用途：查找含有相关名字的文件并加载。
 
 
 
@@ -165,64 +215,7 @@ void classifyList(MusicList &m)
 
 * 如果是节奏行，存储值duration中；如果是音符行，则将字符串发送至play函数进行进一步解析。
 
-### 2.转化成音符
-
-```cpp
-Note parseNote(const std::string& noteStr)
-```
-
-* 将输入的处理后的字符串（仅带有音符信息）进行解析，转化为音符对象。
-
-* 案例输入：2^
-* 错误输入：
-  * 2^_（带有节奏字符）
-  * [4,1,]（带有多个音符）
-
-转换对应法则：
-
-| 字符  | 说明   | 使用示例                                               |
-| ----- | ------ | ------------------------------------------------------ |
-| `1~7` | 音符   | 如 `1 2 3 4 5` 表示播放 `do re mi fa sol` 五个音符     |
-| `0`   | 休止符 | 略                                                     |
-| `,`   | 低音   | 即音符向下附点，最多可以有三个低音号。如 `1,` `2,,` 等 |
-| `^`   | 高音   | 类比低音                                               |
-| `#`   | 升音   | 向上半音高。如 `4#`                                    |
-
-### 3.将单行字符串转化为NoteMap
-
-**NoteMap数据结构图示**：<img src="https://www.helloimg.com/i/2024/12/15/675e514747740.png" />
-
-* 每一个NoteNode对应一个音符
-* 每一个NoteList存储一个和弦上的所有音符（非和弦则只存一个音符）
-* 每一个vector存储一行字符串上解析出来的所有NoteList
-* 最终构成NoteMap
-
-**主要步骤**：
-
-* 将字符串按照空格拆分为一个个token
-
-* 处理token尾部的节奏字符串从而为duration赋值，同时删去节奏字符串；节奏映射如下：
-
-  | 字符 | 说明   | 使用示例                                     |
-  | ---- | ------ | -------------------------------------------- |
-  | `-`  | 延音   | 每个延音号将为音符额外多出一个四分音符的延时 |
-  | `_`  | 分音   | 每个分音号将使音符的延时减半                 |
-  | `.`  | 附点   | 每个附点号将使音符的延时增半（×1.5）         |
-  | `[]` | 和弦   | 中括号内的音符将一次性演奏                   |
-  | `|`  | 小节线 | 程序将忽略这个符号                           |
-  | `*`  | 三分音 | 每个分音号将使音符的延时除以三               |
-  | `%`  | 五分音 | 每个分音号将使音符的延时除以五               |
-  | `&`  | 七分音 | 每个分音号将使音符的延时除以七               |
-
-* token分为和弦和非和弦，两种方式处理，殊途同归
-
-* 如果是和弦，将token转化为一个个Note并存入NoteList
-
-* 如果不是和弦，直接将Note存入NoteList
-
-* 最后将获得的一个个NoteList存入NoteMap中
-
-### 4.播放完整的一行乐谱
+### 2.播放完整的一行乐谱
 
 ```cpp
 void playSingleLine(std::vector<NoteList> noteLists, bool isMain)
@@ -232,7 +225,7 @@ void playSingleLine(std::vector<NoteList> noteLists, bool isMain)
 >
 > 同时跟随进度条，确保左右手进度一致，防止各弹各的。
 
-### 5.播放整首曲子
+### 3.播放整首曲子
 
 ```cpp
 void play(std::string s1,std::string s2="",double duration = 500)
@@ -278,3 +271,98 @@ void play()
 ```cpp
 void stop()
 ```
+
+
+
+## 八、MusicDeserializer
+
+> 反序列化音乐类，主要逻辑是实现字符串---->noteTable对象的转化，实际上这个逻辑之前的代码以及实现了，只不过把它单独抽象成一个工具类。
+
+**属性**：
+
+* ```enum scale```：不同音符与其相应midi值的映射
+* ```const int C_Scale[7][7]```：钢琴白键数组
+* ```const int C_Scale_s[7][7]```：钢琴黑键数组
+
+### 1.音符字符串转化成音符
+
+```cpp
+Note parseNote(const std::string& noteStr)
+```
+
+* 将输入的处理后的字符串（仅带有音符信息）进行解析，转化为音符对象。
+
+* 案例输入：2^
+* 错误输入：
+  * 2^_（带有节奏字符）
+  * [4,1,]（带有多个音符）
+
+转换对应法则：
+
+| 字符  | 说明   | 使用示例                                               |
+| ----- | ------ | ------------------------------------------------------ |
+| `1~7` | 音符   | 如 `1 2 3 4 5` 表示播放 `do re mi fa sol` 五个音符     |
+| `0`   | 休止符 | 略                                                     |
+| `,`   | 低音   | 即音符向下附点，最多可以有三个低音号。如 `1,` `2,,` 等 |
+| `^`   | 高音   | 类比低音                                               |
+| `#`   | 升音   | 向上半音高。如 `4#`                                    |
+
+### 2.将单行字符串转化为NoteTable
+
+```cpp
+std::vector<NoteList> deserialize(const std::string& line,double defaultDuration)
+```
+
+**NoteTable数据结构图示**：<img src="https://www.helloimg.com/i/2024/12/15/675e514747740.png" />
+
+* 每一个NoteNode对应一个音符
+* 每一个NoteList存储一个和弦上的所有音符（非和弦则只存一个音符）
+* 每一个vector存储一行字符串上解析出来的所有NoteList
+* 最终构成NoteTable
+
+**主要步骤**：
+
+* 将字符串按照空格拆分为一个个token
+
+* 处理token尾部的节奏字符串从而为duration赋值，同时删去节奏字符串；节奏映射如下：
+
+  | 字符 | 说明   | 使用示例                                     |
+  | ---- | ------ | -------------------------------------------- |
+  | `-`  | 延音   | 每个延音号将为音符额外多出一个四分音符的延时 |
+  | `_`  | 分音   | 每个分音号将使音符的延时减半                 |
+  | `.`  | 附点   | 每个附点号将使音符的延时增半（×1.5）         |
+  | `[]` | 和弦   | 中括号内的音符将一次性演奏                   |
+  | `|`  | 小节线 | 程序将忽略这个符号                           |
+  | `*`  | 三分音 | 每个分音号将使音符的延时除以三               |
+  | `%`  | 五分音 | 每个分音号将使音符的延时除以五               |
+  | `&`  | 七分音 | 每个分音号将使音符的延时除以七               |
+
+* token分为和弦和非和弦，两种方式处理，殊途同归
+
+* 如果是和弦，将token转化为一个个Note并存入NoteList
+
+* 如果不是和弦，直接将Note存入NoteList
+
+* 最后将获得的一个个NoteList存入NoteTable中
+
+
+
+## 九、MusicSerializer
+
+> 序列化音乐，实现NoteTable对象--->字符串的转化，是反序列化的反过程。主要是用于用户编曲后，需要保存至.txt文件。
+
+### 1.音符对象转化成音符字符串
+
+```cpp
+std::string parseString(Note note)
+```
+
+* 与之前的逻辑相同，不再缀叙。
+
+### 2.将NoteTable对象转化为字符串
+
+```cpp
+std::string serialize(std::vector<NoteList> noteTable)
+```
+
+* 与之前的逻辑相同，不再缀叙。
