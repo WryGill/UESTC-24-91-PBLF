@@ -1,5 +1,7 @@
 # PBLF项目后端食用指南
 
+**版本要求：C++17以上，mingw9.0以上**
+
 # 一、LinkedList
 
 > 这是一个用于存储字符串的一个单向链表，其余的跟普通链表没什么区别。
@@ -112,7 +114,7 @@ std::vector<int> transformNoteBuffer();
 
 
 
-## 五、MusicManager
+## 五、MusicManager(供前端调用)
 
 > ~~这一串代码属于负责raw data（.txt文件）的解析阶段，所以以字符串和文件的操作为主，主要目的还是将文件内容解析到字符串链表里。~~
 >
@@ -124,6 +126,9 @@ std::vector<int> transformNoteBuffer();
 * ```std::string musicPath```：被操作歌曲的相对路径
 * ```MusicSerializer musicSerializer```：序列化当前音乐（就是将音乐从noteTable对象转化为字符串）
 * ```MusicDeserializer musicDeserializer```：反序列化音乐（就是将字符串转化成noteTable对象）
+* ```const fs::path dirPath = "../songs/";```：目标路径
+* ```const std::string ext = ".txt";```：拓展名
+* ```std::string curMusic;```：当前音乐名称
 
 ### 1.添加文本行
 
@@ -147,7 +152,7 @@ void load(std::string path="")
 void clear()
 ```
 
-### 4.保存当前行
+### 4.缓存当前行
 
 ```cpp
 void saveLine(std::vector<NoteList> noteTable)
@@ -159,16 +164,16 @@ void saveLine(std::vector<NoteList> noteTable)
 ### 5.保存整首歌
 
 ```cpp
-void saveMusic()
+void saveMusic(const std::string& music)
 ```
 
 * 应用场景：用户编写完整首歌了，在文件中永久保存。
-* 函数用途：将currentMusic存储的字符串全部保存至文件中。
+* 函数用途：将currentMusic存储的字符串全部保存至指定文件中。
 
 ### 6.新建歌曲
 
 ```cpp
-void create(std::string music)
+void create(const std::string& music)
 ```
 
 * 应用场景：用户新建一首歌，并开始编曲。
@@ -177,20 +182,28 @@ void create(std::string music)
 ### 7.删除歌曲
 
 ```cpp
-void remove(std::string music)
+void remove(const std::string& music)
 ```
 
 * 应用场景：用户对自己的作品不满意，决定删除。
 * 函数用途：删除指定文件。
 
-### 8.查找歌曲
+### 8.查找并加载歌曲
 
 ```cpp
-void query(std::string music)
+void query(const std::string& music)
 ```
 
 * 应用场景：帮助用户查找并加载歌曲
 * 函数用途：查找含有相关名字的文件并加载。
+
+### 9.设置/切换 音符节奏
+
+```cpp
+void setDuration(double duration)
+```
+
+* 应用场景：编曲者设置/切换默认的音符延迟，加快音乐节奏（只能设置接下来编写的音符的节奏，已经编曲的不再适用）
 
 
 

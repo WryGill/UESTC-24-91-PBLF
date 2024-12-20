@@ -7,15 +7,6 @@ NoteList::NoteList(const NoteList& other) {
     head = copyList(other.head);
     duration = other.duration;
 }
-// 赋值操作符
-NoteList& NoteList::operator=(const NoteList& other) {
-    if (this != &other) { // 防止自赋值
-        clear();          // 清空现有数据
-        head = copyList(other.head);
-        duration = other.duration;
-    }
-    return *this;
-}
 // 析构函数释放所有节点内存
 NoteList::~NoteList() {
     clear();

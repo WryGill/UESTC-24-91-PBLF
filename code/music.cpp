@@ -6,5 +6,7 @@ int main(){
     // while (1);
     // bgm.stop();
     // MusicPlayer musicPlayer;
-    // return 0;
+    MusicManager m;
+    m.create("op");
+    return 0;
 }
